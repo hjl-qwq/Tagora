@@ -1,0 +1,492 @@
+/* Tag manager dialog. The modal shell follows `plugin/repository`, which follows the
+   preferences panel: a full-viewport mask centring a fixed-size dialog. Nothing here is
+   draggable, and the mask is what keeps the editor underneath out of reach. */
+
+#plugin-tag-manager {
+  --tm-bg: #f8fafc;
+  --tm-bg-raised: #ffffff;
+  --tm-border: rgba(0, 0, 0, 0.08);
+  --tm-text: #1e293b;
+  --tm-sub: #64748b;
+  --tm-primary: #4285f4;
+  --tm-primary-soft: rgba(66, 133, 244, 0.12);
+  --tm-hover: rgba(0, 0, 0, 0.04);
+  --tm-warn: #b45309;
+  --tm-radius: 8px;
+  --tm-mask: rgba(0, 0, 0, 0.5);
+
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tm-text);
+  background-color: var(--tm-mask);
+  animation: tag-manager-fade-in 0.2s linear forwards;
+}
+
+body.plugin-dark-mode #plugin-tag-manager {
+  --tm-bg: #252528;
+  --tm-bg-raised: #2d2d31;
+  --tm-border: rgba(255, 255, 255, 0.1);
+  --tm-text: #f3f4f6;
+  --tm-sub: #9ca3af;
+  --tm-primary: #8ab4f8;
+  --tm-primary-soft: rgba(138, 180, 248, 0.18);
+  --tm-hover: rgba(255, 255, 255, 0.06);
+  --tm-warn: #fbbf24;
+  --tm-mask: rgba(0, 0, 0, 0.8);
+}
+
+@keyframes tag-manager-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tag-manager-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tag-manager-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 85vw;
+  max-width: 960px;
+  height: 85vh;
+  max-height: 720px;
+  overflow: hidden;
+  background-color: var(--tm-bg-raised);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  animation: tag-manager-slide-up 0.3s ease-out forwards;
+}
+
+.tag-manager-header {
+  display: flex;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--tm-border);
+}
+
+.tag-manager-heading {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tag-manager-header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: 16px;
+}
+
+.tag-manager-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-height: 32px;
+  margin-left: 6px;
+  border-radius: var(--tm-radius);
+  color: var(--tm-sub);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tag-manager-button:hover {
+  color: var(--tm-text);
+  background-color: var(--tm-hover);
+}
+
+.tag-manager-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 28px 24px 28px;
+  font-size: 13px;
+}
+
+.tag-manager-view {
+  display: block;
+}
+
+/* --- status ------------------------------------------------------------- */
+
+.tag-manager-status {
+  padding: 8px 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  background-color: var(--tm-bg);
+  color: var(--tm-sub);
+  line-height: 1.5;
+}
+
+.tag-manager-status-warn {
+  color: var(--tm-warn);
+}
+
+.tag-manager-path {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+  opacity: 0.75;
+}
+
+/* --- sections ----------------------------------------------------------- */
+
+.tag-manager-section {
+  margin-bottom: 18px;
+}
+
+.tag-manager-label {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+  color: var(--tm-sub);
+}
+
+.tag-manager-empty {
+  padding: 10px 2px;
+  color: var(--tm-sub);
+  font-size: 12px;
+}
+
+/* --- current document --------------------------------------------------- */
+
+.tag-manager-doc {
+  margin-bottom: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12px;
+  color: var(--tm-sub);
+}
+
+.tag-manager-chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.tag-manager-chip {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  margin: 0 6px 6px 0;
+  padding: 2px 4px 2px 8px;
+  border-radius: 12px;
+  background-color: var(--tm-primary-soft);
+  color: var(--tm-primary);
+}
+
+.tag-manager-chip-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
+.tag-manager-chip-remove {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 15px;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.tag-manager-chip-remove:hover {
+  opacity: 1;
+  background-color: var(--tm-hover);
+}
+
+/* --- add tag ------------------------------------------------------------ */
+
+.tag-manager-add-row {
+  display: flex;
+  align-items: center;
+}
+
+.tag-manager-input,
+.tag-manager-search {
+  flex-grow: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--tm-text);
+  background-color: var(--tm-bg-raised);
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  outline: none;
+}
+
+#plugin-tag-manager .tag-manager-search {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.tag-manager-input:focus,
+.tag-manager-search:focus {
+  border-color: var(--tm-primary);
+}
+
+.tag-manager-add {
+  flex-shrink: 0;
+  margin-left: 6px;
+  padding: 5px 12px;
+  border-radius: var(--tm-radius);
+  background-color: var(--tm-primary);
+  color: #ffffff;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tag-manager-add:hover {
+  opacity: 0.9;
+}
+
+/* --- suggestion list ---------------------------------------------------- */
+
+.tag-manager-suggest:not(:empty) {
+  margin-top: 6px;
+  max-height: 132px;
+  overflow-y: auto;
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  background-color: var(--tm-bg-raised);
+}
+
+.tag-manager-suggest-row,
+.tag-manager-tag-row,
+.tag-manager-file-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.tag-manager-suggest-row:hover,
+.tag-manager-tag-row:hover,
+.tag-manager-file-row:hover {
+  background-color: var(--tm-hover);
+}
+
+.tag-manager-selected {
+  background-color: var(--tm-primary-soft);
+}
+
+.tag-manager-suggest-name,
+.tag-manager-tag-name,
+.tag-manager-file-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tag-manager-suggest-name,
+.tag-manager-tag-name {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.tag-manager-count {
+  flex-shrink: 0;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--tm-sub);
+}
+
+/* --- tag browser + file list -------------------------------------------- */
+
+.tag-manager-tags {
+  max-height: 168px;
+  overflow-y: auto;
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  background-color: var(--tm-bg-raised);
+}
+
+.tag-manager-files {
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  background-color: var(--tm-bg-raised);
+}
+
+.tag-manager-file-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--tm-border);
+}
+
+.tag-manager-file-row:last-child {
+  border-bottom: none;
+}
+
+.tag-manager-file-main {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.tag-manager-file-remove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-left: 8px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 17px;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.tag-manager-file-remove:hover {
+  opacity: 1;
+  background-color: var(--tm-hover);
+}
+
+/* A record whose file is gone must not present itself as a live link. */
+.tag-manager-file-missing {
+  cursor: default;
+}
+
+.tag-manager-file-missing .tag-manager-file-name {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.tag-manager-file-missing .tag-manager-file-dir,
+.tag-manager-file-missing .tag-manager-file-tags {
+  opacity: 0.45;
+}
+
+.tag-manager-file-dir {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--tm-sub);
+}
+
+.tag-manager-file-tags {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--tm-primary);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --- stale records view -------------------------------------------------- */
+
+.tag-stale-summary {
+  padding-bottom: 10px;
+  color: var(--tm-sub);
+}
+
+.tag-stale-list {
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  background-color: var(--tm-bg-raised);
+}
+
+.tag-stale-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--tm-border);
+}
+
+.tag-stale-row:last-child {
+  border-bottom: none;
+}
+
+.tag-stale-name {
+  flex-grow: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.tag-stale-tags {
+  flex-shrink: 0;
+  max-width: 45%;
+  margin-left: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--tm-primary);
+}
+
+.tag-stale-remove {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-left: 8px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 17px;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.tag-stale-remove:hover {
+  opacity: 1;
+  background-color: var(--tm-hover);
+}
+
+.tag-manager-stale-link {
+  margin-top: 4px;
+  color: var(--tm-primary);
+  cursor: pointer;
+}
+
+.tag-manager-stale-link:hover {
+  text-decoration: underline;
+}
+
+/* --- file tree badge ----------------------------------------------------
+   Injected into Typora's own file tree, i.e. outside this plugin's dialog, so it cannot be
+   scoped to the panel. */
+
+.file-node-content .plugin-tag-manager-badge {
+  position: absolute;
+  right: 10px;
+  min-width: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  color: var(--active-file-text-color, #4285f4);
+  background-color: var(--active-file-bg-color, rgba(66, 133, 244, 0.14));
+  opacity: 0.75;
+  pointer-events: none;
+}
