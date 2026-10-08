@@ -176,7 +176,7 @@ class TagIndexStore {
    */
   async save(index) {
     const target = this.indexPath
-    if (!target) throw new Error("tag_manager: no repository directory to write the index into")
+    if (!target) throw new Error("tagora: no repository directory to write the index into")
 
     await this.fs.ensureDir(this.path.dirname(target))
     const temporary = `${target}.tmp`

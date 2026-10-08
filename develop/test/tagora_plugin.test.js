@@ -7,11 +7,11 @@ global.BasePlugin = class {
   i18n = { t: key => key }
 }
 
-const { plugin: TagManagerPlugin } = require("../../plugin/tag_manager")
-const paths = require("../../plugin/tag_manager/paths")
-const { REASON } = require("../../plugin/tag_manager/repository")
+const { plugin: TagManagerPlugin } = require("../../plugin/tagora")
+const paths = require("../../plugin/tagora/paths")
+const { REASON } = require("../../plugin/tagora/repository")
 
-const PLUGIN_DIR = path.resolve(__dirname, "../../plugin/tag_manager")
+const PLUGIN_DIR = path.resolve(__dirname, "../../plugin/tagora")
 const LOCALE_DIR = path.resolve(__dirname, "../../plugin/global/locales")
 
 const createInstance = () => {
@@ -159,8 +159,8 @@ test("every locale key the plugin uses is defined in all three locale files", ()
 
   for (const locale of ["en", "zh-CN", "zh-TW"]) {
     const data = JSON.parse(fs.readFileSync(path.join(LOCALE_DIR, `${locale}.json`), "utf-8"))
-    const section = data.tag_manager
-    assert.ok(section, `${locale}.json has no tag_manager section`)
+    const section = data.tagora
+    assert.ok(section, `${locale}.json has no tagora section`)
     const missing = [...used].filter(key => !Object.hasOwn(section, key))
     assert.deepEqual(missing, [], `${locale}.json is missing: ${missing.join(", ")}`)
   }
@@ -238,9 +238,9 @@ test("is wired into the shared action_buttons group", () => {
   const toml = require("../../plugin/global/core/lib/smol-toml.js")
   const settings = toml.parse(fs.readFileSync(path.resolve(__dirname, "../../plugin/global/settings/settings.default.toml"), "utf-8"))
   const buttons = settings.action_buttons.BUTTONS
-  const entry = buttons.find(button => button.callback === "tag_manager")
+  const entry = buttons.find(button => button.callback === "tagora")
 
-  assert.ok(entry, "tag_manager is missing from action_buttons.BUTTONS")
+  assert.ok(entry, "tagora is missing from action_buttons.BUTTONS")
   assert.equal(entry.enable, true)
   assert.match(entry.icon, /fa fa-/)
   assert.equal(entry.coordinate.length, 2)

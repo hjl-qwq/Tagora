@@ -1,8 +1,8 @@
 const assert = require("node:assert/strict")
 const test = require("node:test")
 
-const { TagRepository, REASON } = require("../../plugin/tag_manager/repository")
-const { STATUS } = require("../../plugin/tag_manager/store")
+const { TagRepository, REASON } = require("../../plugin/tagora/repository")
+const { STATUS } = require("../../plugin/tagora/store")
 
 /** In-memory stand-in for TagIndexStore: same surface, no disk. */
 const createFakeStore = (initial = { files: {} }) => {
@@ -293,7 +293,7 @@ test("duplicate spellings already in the index collapse to the most common one",
 })
 
 test("a path that would collide with Object.prototype is rejected, not silently applied", async () => {
-  const { serializeIndex, reviveIndex } = require("../../plugin/tag_manager/store")
+  const { serializeIndex, reviveIndex } = require("../../plugin/tagora/store")
 
   // JSON.parse creates a real own property named __proto__, which an object literal cannot.
   const hostile = JSON.parse('{"__proto__": ["x"], "ok.md": ["y"]}')
@@ -310,7 +310,7 @@ test("a path that would collide with Object.prototype is rejected, not silently 
 })
 
 test("the index key survives a round trip through serialisation", async () => {
-  const { serializeIndex, reviveIndex } = require("../../plugin/tag_manager/store")
+  const { serializeIndex, reviveIndex } = require("../../plugin/tagora/store")
   const store = createFakeStore()
   const { repo } = await loadRepo(store)
   await repo.addTag("notes/a.md", "Git")

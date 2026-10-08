@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict")
 const test = require("node:test")
 
-const paths = require("../../plugin/tag_manager/paths")
+const paths = require("../../plugin/tagora/paths")
 
 test("normalizes a path into the canonical forward-slash index key", () => {
   assert.equal(paths.normalizeRelative("notes\\a.md"), "notes/a.md")

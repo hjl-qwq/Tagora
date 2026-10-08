@@ -4,7 +4,7 @@ const os = require("node:os")
 const path = require("node:path")
 const fs = require("fs-extra")
 
-const store = require("../../plugin/tag_manager/store")
+const store = require("../../plugin/tagora/store")
 
 const makeStore = async (indexFile) => {
   const repoDir = await fs.mkdtemp(path.join(os.tmpdir(), "typora-tag-manager-"))

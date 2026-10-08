@@ -295,7 +295,7 @@ class TagManagerPlugin extends BasePlugin {
         if (oldPath && newPath) this._onRenamed(oldPath, newPath)
       })
     } catch (err) {
-      console.warn("[tag_manager] rename hook unavailable:", err)
+      console.warn("[tagora] rename hook unavailable:", err)
     }
   }
 
@@ -313,7 +313,7 @@ class TagManagerPlugin extends BasePlugin {
       (result, absolutePath) => this._onTreeRowRemoved(absolutePath),
     )
     if (promise && typeof promise.catch === "function") {
-      promise.catch(err => console.warn("[tag_manager] delete hook unavailable:", err))
+      promise.catch(err => console.warn("[tagora] delete hook unavailable:", err))
     }
   }
 
@@ -369,7 +369,7 @@ class TagManagerPlugin extends BasePlugin {
           this._refreshTree()
         }
       } catch (err) {
-        console.warn("[tag_manager] index cleanup failed:", err)
+        console.warn("[tagora] index cleanup failed:", err)
       }
     }, DELETE_RECONCILE_DELAY)
 
@@ -387,7 +387,7 @@ class TagManagerPlugin extends BasePlugin {
       // Rows rendered before the decoration was installed have no badge yet, so redraw once.
       promise
         .then(() => this._refreshTree())
-        .catch(err => console.warn("[tag_manager] file tree decorate failed:", err))
+        .catch(err => console.warn("[tagora] file tree decorate failed:", err))
     }
   }
 
@@ -414,7 +414,7 @@ class TagManagerPlugin extends BasePlugin {
       badge.title = this.i18n.t("badgeHint", { count })
       if (!existing) content.appendChild(badge)
     } catch (err) {
-      console.warn("[tag_manager] badge failed:", err)
+      console.warn("[tagora] badge failed:", err)
     }
   }
 
@@ -449,7 +449,7 @@ class TagManagerPlugin extends BasePlugin {
       this.repo = repo
       this._refreshTree()
     } catch (err) {
-      console.error("[tag_manager] failed to load index:", err)
+      console.error("[tagora] failed to load index:", err)
       this.utils.notification.show(this.i18n.t("loadFailed", { error: String(err && err.message || err) }), "error")
     }
   }
@@ -459,7 +459,7 @@ class TagManagerPlugin extends BasePlugin {
     try {
       File?.editor?.library?.refreshPanelCommand?.()
     } catch (err) {
-      console.warn("[tag_manager] tree refresh failed:", err)
+      console.warn("[tagora] tree refresh failed:", err)
     }
   }
 
@@ -736,7 +736,7 @@ class TagManagerPlugin extends BasePlugin {
         const relative = paths.relativeFrom(dir, path)
         if (relative) found.push(relative)
       },
-      onNonFatalError: (path, err) => console.warn("[tag_manager] scan skipped", path, err),
+      onNonFatalError: (path, err) => console.warn("[tagora] scan skipped", path, err),
     })
     return found
   }
@@ -1044,7 +1044,7 @@ class TagManagerPlugin extends BasePlugin {
     try {
       File?.editor?.library?.openFile(absolute)
     } catch (err) {
-      console.warn("[tag_manager] openFile failed:", err)
+      console.warn("[tagora] openFile failed:", err)
       this.utils.notification.show(this.i18n.t("actionFailed", { error: String(err) }), "error")
     }
   }
