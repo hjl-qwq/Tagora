@@ -12,7 +12,6 @@ const paths = require("../../plugin/tagora/paths")
 const { REASON } = require("../../plugin/tagora/repository")
 
 const PLUGIN_DIR = path.resolve(__dirname, "../../plugin/tagora")
-const LOCALE_DIR = path.resolve(__dirname, "../../plugin/global/locales")
 
 const createInstance = () => {
   const instance = new TagManagerPlugin()
@@ -147,7 +146,7 @@ test("current document path is resolved against the mounted folder", () => {
   assert.equal(instance._currentFilePath(), "")
 })
 
-test("every locale key the plugin uses is defined in all three locale files", () => {
+test("every locale key the plugin uses is defined in all three built-in locales", () => {
   const source = fs.readFileSync(path.join(PLUGIN_DIR, "index.js"), "utf-8")
   const used = new Set([...source.matchAll(/i18n\.t\("([^"]+)"/g)].map(m => m[1]))
   // Keys reached indirectly through REASON_I18N and _buildEmpty().
@@ -157,13 +156,48 @@ test("every locale key the plugin uses is defined in all three locale files", ()
     "noMatch", "noFiles", "badgeHint",
   ].forEach(key => used.add(key))
 
-  for (const locale of ["en", "zh-CN", "zh-TW"]) {
-    const data = JSON.parse(fs.readFileSync(path.join(LOCALE_DIR, `${locale}.json`), "utf-8"))
-    const section = data.tagora
-    assert.ok(section, `${locale}.json has no tagora section`)
+  const { MESSAGES, LOCALES } = require("../../plugin/tagora/messages")
+  for (const locale of LOCALES) {
+    const section = MESSAGES[locale]
+    assert.ok(section, `messages.js has no ${locale} table`)
     const missing = [...used].filter(key => !Object.hasOwn(section, key))
-    assert.deepEqual(missing, [], `${locale}.json is missing: ${missing.join(", ")}`)
+    assert.deepEqual(missing, [], `${locale} is missing: ${missing.join(", ")}`)
   }
+})
+
+test("the built-in locales declare exactly the same keys", () => {
+  const { MESSAGES, LOCALES } = require("../../plugin/tagora/messages")
+  const [base, ...rest] = LOCALES
+  const expected = Object.keys(MESSAGES[base]).sort()
+  for (const locale of rest) {
+    assert.deepEqual(Object.keys(MESSAGES[locale]).sort(), expected, `${locale} key set differs from ${base}`)
+  }
+})
+
+test("bindMessages serves built-in text, interpolates, and falls back to the framework", () => {
+  const { MESSAGES, bindMessages } = require("../../plugin/tagora/messages")
+  const i18n = bindMessages({ locale: "zh-CN", t: key => `fw:${key}` })
+
+  assert.equal(i18n.t("act.add"), MESSAGES["zh-CN"]["act.add"])
+  assert.notEqual(i18n.t("act.add"), "act.add", "built-in text must replace the raw key")
+  assert.match(i18n.t("staleSummary", { count: 3 }), /3/, "placeholders must be interpolated")
+  assert.equal(i18n.t("unknownKey"), "fw:unknownKey", "unknown keys fall through to the framework")
+  assert.equal(i18n.locale, "zh-CN", "the framework locale is preserved")
+
+  // An unknown locale degrades to English instead of showing raw keys.
+  assert.equal(bindMessages({ locale: "ja", t: key => key }).t("act.add"), MESSAGES.en["act.add"])
+})
+
+test("prepare() rebinds i18n and repairs pluginName when NAME is absent", async () => {
+  const instance = createInstance()
+  instance.i18n = { locale: "en", t: key => key }
+  instance.pluginName = "pluginName"
+  instance.config = {}
+
+  await instance.prepare()
+
+  assert.notEqual(instance.i18n.t("act.add"), "act.add")
+  assert.notEqual(instance.pluginName, "pluginName", "pluginName must come from the built-in table")
 })
 
 test("stays inside the Chrome 84 compatibility boundary", () => {
@@ -230,40 +264,44 @@ test("contributes no editor-corner UI of its own", () => {
   assert.doesNotMatch(css, /#plugin-tag-button|#plugin-tag-bar|\.tag-bar-/)
 })
 
-test("is wired into the shared action_buttons group", () => {
-  // action_buttons resolves a BUTTONS entry via utils.getPluginFn(plugin, fn), where fn
-  // defaults to "call", so the plugin has to expose exactly that.
+// ---- installer contract -------------------------------------------------------
+
+const MANIFEST_PATH = path.resolve(__dirname, "../../installer.toml")
+const readManifest = () => fs.readFileSync(MANIFEST_PATH, "utf-8")
+
+test("exposes call() so the right-click menu and the hotkey can reach it", () => {
+  // right_click_menu invokes plugin.call(); hotkey() reuses the same entry point.
+  // A plugin without call() shows up greyed out and cannot be clicked.
   assert.equal(typeof createInstance().call, "function")
-
-  const toml = require("../../plugin/global/core/lib/smol-toml.js")
-  const settings = toml.parse(fs.readFileSync(path.resolve(__dirname, "../../plugin/global/settings/settings.default.toml"), "utf-8"))
-  const buttons = settings.action_buttons.BUTTONS
-  const entry = buttons.find(button => button.callback === "tagora")
-
-  assert.ok(entry, "tagora is missing from action_buttons.BUTTONS")
-  assert.equal(entry.enable, true)
-  assert.match(entry.icon, /fa fa-/)
-  assert.equal(entry.coordinate.length, 2)
-  assert.ok(entry.coordinate.every(value => Number.isInteger(value) && value >= 0))
-
-  // Two entries sharing a cell would draw one button on top of the other.
-  const cells = buttons.map(button => button.coordinate.join("-"))
-  assert.equal(new Set(cells).size, cells.length, "duplicate coordinate in action_buttons.BUTTONS")
 })
 
-test("the button group is laid out as a single vertical column", () => {
-  // action_buttons sizes its CSS grid from these coordinates: `--grid-cols = maxY + 1` and
-  // `--grid-rows = maxX + 1`. Every entry therefore has to sit on Y = 0 for the group to be
-  // one column wide; a single Y = 1 entry would make it two columns again.
-  const toml = require("../../plugin/global/core/lib/smol-toml.js")
-  const settings = toml.parse(fs.readFileSync(path.resolve(__dirname, "../../plugin/global/settings/settings.default.toml"), "utf-8"))
-  const buttons = settings.action_buttons.BUTTONS
+test("ships an installer manifest that matches the on-disk layout", () => {
+  const toml = readManifest()
 
-  const widths = new Set(buttons.map(button => button.coordinate[1]))
-  assert.deepEqual([...widths], [0], "every button must sit in the first column")
+  assert.match(toml, /^\s*id\s*=\s*"tagora"\s*$/m, "id must match the plugin folder name")
+  assert.match(toml, /^\s*name\s*=\s*".+"\s*$/m, "name lands in NAME and in the menu title")
+  assert.match(toml, /^\s*source\s*=\s*"plugin"\s*$/m, "source must point at the plugin/ folder")
+  assert.match(toml, /^\s*files\s*=\s*\[\s*"tagora"\s*\]\s*$/m, "only plugin/tagora is installed")
 
-  const maxX = Math.max(...buttons.map(button => button.coordinate[0]))
-  assert.equal(maxX + 1, buttons.length, "a single column needs one row per button")
+  // The installer refuses to install unless the entry point exists after the copy.
+  assert.equal(fs.existsSync(path.join(PLUGIN_DIR, "index.js")), true)
+})
+
+test("every config key the plugin reads has a default in the manifest", () => {
+  // An installer-based install owns no settings.default.toml entry, so this.config is
+  // exactly what the installer writes; a key without a default stays undefined.
+  // ENABLE / NAME are excluded: the installer writes them from [plugin], not [settings].
+  const reserved = new Set(["ENABLE", "NAME"])
+  const source = fs.readFileSync(path.join(PLUGIN_DIR, "index.js"), "utf-8")
+  const used = new Set([...source.matchAll(/this\.config\.([A-Z_][A-Z0-9_]*)/g)]
+    .map(m => m[1])
+    .filter(key => !reserved.has(key)))
+  assert.ok(used.size > 0, "no config keys found in index.js")
+
+  const parts = readManifest().split("[settings]")
+  const settingsBlock = parts[parts.length - 1] || ""
+  const missing = [...used].filter(key => !new RegExp(`^\\s*${key}\\s*=`, "m").test(settingsBlock))
+  assert.deepEqual(missing, [], `installer.toml [settings] is missing: ${missing.join(", ")}`)
 })
 
 // ---- element stub shared by the rendering tests ------------------------------

@@ -1,6 +1,7 @@
 const PATH = require("path")
 
 const paths = require("./paths")
+const { bindMessages } = require("./messages")
 const { DEFAULT_INDEX_FILE, TagIndexStore } = require("./store")
 const { TagRepository, REASON } = require("./repository")
 
@@ -15,7 +16,8 @@ const DELETE_RECONCILE_DELAY = 600
 
 /**
  * Repository results are reason codes rather than prose, so the wording stays in the
- * locale files and the same code can be reused by a future server/CLI front end.
+ * message table (messages.js) and the same code can be reused by a future server/CLI
+ * front end.
  */
 const REASON_I18N = {
   [REASON.DUPLICATE]: "tagDuplicate",
@@ -39,8 +41,21 @@ const REASON_I18N = {
  *   - a tag-count badge injected into Typora's own file tree
  */
 class TagManagerPlugin extends BasePlugin {
-  // The editor button is contributed to the shared `action_buttons` group through its
-  // `BUTTONS` setting, so this plugin owns no editor-corner UI of its own.
+  /**
+   * The plugin ships its own UI strings (messages.js) because a plugin installed by the
+   * installer only owns files under `plugin/tagora/` — it cannot own a namespace in the
+   * shared `plugin/global/locales/*.json`. Rebinding here, before `style()`/`html()` run,
+   * makes every later `this.i18n.t(...)` call resolve to the built-in table.
+   */
+  prepare = () => {
+    this.i18n = bindMessages(this.i18n)
+    // The base class resolved pluginName before the rebind, so redo it when NAME is absent.
+    if (!this.config.NAME) this.pluginName = this.i18n.t("pluginName")
+  }
+
+  // Entered through the configured hotkey and through the right-click menu (the installer
+  // sets `[right_click_menu] FIND_LOST_PLUGINS`, which appends this plugin automatically).
+  // No editor-corner UI of its own: the dialog owns all of its controls.
   style = () => true
 
   html = () => `
