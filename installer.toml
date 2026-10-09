@@ -8,7 +8,7 @@
 # 安装器负责复制文件 + 合并 settings.user.toml（复制前先备份为 .bak）。
 #
 # 安装后的可见入口：
-#   - 右键菜单最后一个分组（__INTERACTIVE_PLUGINS__）末尾，标题取自下面的 name
+#   - 右键菜单：装的时候在安装器里选分组（默认新建「自定义插件」并放在最前）
 #   - [settings] HOTKEY 配置的快捷键（默认 ctrl+shift+k）
 # 本插件不占用 action_buttons 的编辑器角落按钮，因此不需要改动插件系统的默认配置。
 
@@ -42,9 +42,11 @@ settings = true
 settings_overwrite = false
 
 [menu]
-# auto = 安装器写 [right_click_menu] FIND_LOST_PLUGINS = true，
-#        插件系统会把已加载但未被 MENUS 列出的插件追加到右键菜单末尾。
-mode = "auto"
+# 插件清单只能表达"要不要上右键菜单"：
+#   group = 上菜单（默认）。具体放进哪个分组、放在第几位，由安装器在安装时选择 ——
+#           所以这里不写 group / position，写了安装器会直接拒绝。
+#   none  = 不注册右键菜单
+mode = "group"
 
 # 插件读取的所有配置键都必须在这里给出默认值：第三方插件没有 settings.default.toml
 # 可以落脚，this.config 就是安装器写进 settings.user.toml 的这一段。
